@@ -3,46 +3,52 @@
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include "nlp.h"
 #include "utils.h"
 
-struct wstat *new_wstat(void)
+
+int *new_int(int x)
 {
-	struct wstat *p;
-	if (!(p = malloc(sizeof(*p)))) {
-		perror("malloc()");
-		exit(EXIT_FAILURE);
-	}
+	int *p;
+	p = malloc(sizeof(*p));
+	*p = x;
 	return p;
 }
+
 
 int cmp_str(const void *a, const void *b)
 {
 	return strcmp(a, b);
 }
 
-char *read_lword(char *buf, FILE *fp)
+size_t read_lword(char *buf, FILE *fp)
 {
-	int i, c;
+	size_t i, c;
 	i = 0;
 	while (isspace(c = fgetc(fp)) || ispunct(c)) ;
 
-	while (c != EOF && !isspace(c) && (!ispunct(c) || c == '\'') && i < 1023) {
+	while (c != EOF && !isspace(c) && i < 1023) {
 		buf[i++] = tolower(c);
 		c = getc(fp);
 	}
 	if (c == EOF && i == 0)
-		return NULL;
+		return 0;
 	buf[i] = '\0';
-	return buf;
+	return i;
 }
 
-uint32_t hash_str(const void *key)
+uint32_t hash_str(const void *str)
 {
-	const char *str = key;
+	const char *s = str;
 	uint64_t hash = 5381;
-	while(*str) {
-		hash = ((hash << 5) + hash) + *str;
-		str++;
+	while(*s) {
+		hash = ((hash << 5) + hash) + *s;
+		s++;
 	}
 	return hash;
+}
+
+void print_str(const void *s)
+{
+	printf("%s\n", (char *) s);
 }

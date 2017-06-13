@@ -1,10 +1,6 @@
 #ifndef HMAP_H
 #define HMAP_H
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <stdint.h>
-#include <error.h>
 
 /*
  * num buckets/linked lists for values to be hashed into initially
@@ -34,8 +30,8 @@ struct hmap_entry {
 
 struct hmap {
 	struct hmap_entry **buckets;
-	size_t n_buckets, size;
-	uint32_t (*hash_k)(const void *k);
+	unsigned n_buckets, size;
+	unsigned (*hash_k)(const void *k);
 	int (*cmp_k)(const void *k1, const void *k2);
 	void (*free_k)(void *k);
 	void (*free_v)(void *v);
@@ -48,7 +44,7 @@ struct hmap {
  * may not work if this is done
  */
 void hmap_init(struct hmap *hmap, 
-		uint32_t (*hash_key)(const void *key), 
+		unsigned (*hash_k)(const void *key), 
 		int (*cmp_k)(const void *k1, const void *k2), 
 		void (*free_k)(void *k), 
 		void (*free_v)(void *v));
@@ -60,7 +56,7 @@ void hmap_init(struct hmap *hmap,
  * if the key-value pairs have automatic storage
  * hashmap_free_all may not be called if free_key or free_value are NULL
  */
-struct hmap *hmap_new(uint32_t (*hash_key)(const void *k), 
+struct hmap *hmap_new(unsigned (*hash_k)(const void *k), 
 		int (*cmp_k)(const void *k1, const void *k2), 
 		void (*free_k)(void *k), 
 		void (*free_v)(void *v));
@@ -108,7 +104,7 @@ void hmap_put(struct hmap *hmap, void *k, void *v);
  * hashmap_entry->value is the value
  * returns NULL when the key-value is not present
  */
-struct hmap_entry *hmap_get(struct hmap *hmap, void *k);
+struct hmap_entry *hmap_get(struct hmap *hmap, const void *k);
 
 /*
  * returns the struct hashmap_entry containing the 
@@ -118,7 +114,7 @@ struct hmap_entry *hmap_get(struct hmap *hmap, void *k);
  * hashmap_entry->value is the value
  * returns NULL when the key-value is not present
  */
-struct hmap_entry *hmap_rm(struct hmap *hmap, void *k);
+struct hmap_entry *hmap_rm(struct hmap *hmap, const void *k);
 
 
 #endif

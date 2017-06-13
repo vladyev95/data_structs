@@ -27,14 +27,16 @@ struct ll *ll_new(int (*cmp)(const void *v1, const void *v2),
 void ll_free(struct ll *ll);
 void ll_free_all(struct ll *ll);
 
-bool ll_contains(const struct ll *ll, const void *val);
+bool ll_contains(const struct ll *ll, const void *v);
 
 void ll_add_head(struct ll *ll, void *val);
 void ll_add_tail(struct ll *ll, void *val);
 
+void ll_add_after(struct ll *ll, struct ll_node *n, void *v);
+
 void *ll_rm_head(struct ll *ll);
 void *ll_rm_tail(struct ll *ll);
 
-void ll_print(const struct ll *ll, void (*print)(const void *val));
+void ll_print(const struct ll *ll, void (*print)(const void *v));
 
 #endif

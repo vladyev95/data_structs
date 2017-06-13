@@ -1,16 +1,13 @@
 #ifndef PQ_H
 #define PQ_H
 
-#include <stdlib.h>
-#include <sys/types.h>
-
 #define PQ_INIT_MAX_SIZE 64
 
 #define PQ_GROWTH_FACTOR 4
 
 struct pq {
 	void **arr;
-	size_t size, max_size;
+	unsigned size, max_size;
 	int (*cmp_v)(const void *v1, const void *v2);
 	void (*free_v)(void *v);
 };

@@ -84,6 +84,26 @@ void ll_add_tail(struct ll *ll, void *v)
 	ll->size++;
 }
 
+void ll_add_after(struct ll *ll, struct ll_node *n, void *v)
+{
+	struct ll_node *new;
+	if (!(new = malloc(sizeof(*new))))
+		fprintf(stderr, "ll malloc() failure");
+	new->v = v;
+	if (n == ll->tail) {
+		new->prev = ll->tail;
+		new->next = NULL;
+		ll->tail->next = new;
+		ll->tail = new;
+	} else {
+		new->prev = n;
+		new->next = n->next;
+		n->next = new;
+		new->next->prev = new;
+	}
+	ll->size++;
+}
+
 void *ll_rm_head(struct ll *ll)
 {
 	void *ret;
@@ -124,7 +144,7 @@ void *ll_rm_tail(struct ll *ll)
 	return ret;
 }
 
-void ll_print(const struct ll *ll, void (*print)(const void *val))
+void ll_print(const struct ll *ll, void (*print)(const void *v))
 {
 	struct ll_node *walk;
 	for (walk = ll->head; walk; walk = walk->next)

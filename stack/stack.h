@@ -1,16 +1,13 @@
 #ifndef STACK_H
 #define STACK_H
 
-#include <stdlib.h>
+#define STACK_INIT_MAX_SIZE 64
 
-struct stack_node {
-	struct stack_node *next;
-	void *v;
-};
+#define STACK_GROWTH_FACTOR 4
 
 struct stack {
-	struct stack_node *top;
-	size_t size;
+	void **arr;
+	unsigned size, max_size;
 	void (*free_v)(void *v);
 };
 

@@ -42,10 +42,8 @@ void vec_free_all(struct vec *vec)
 bool vec_contains(const struct vec *vec, const void *v)
 {
 	int i;
-	for (i=0; i<vec->size; i++)
-		if (!vec->cmp(vec->arr[i], v))
-			return true;
-	return false;
+    for (i = 0; i < vec->size && vec->cmp(vec->arr[i], v); i++) ;
+	return i == vec->size;
 }
 
 void vec_add(struct vec *vec, void *v)
@@ -55,7 +53,7 @@ void vec_add(struct vec *vec, void *v)
 	vec->arr[vec->size++] = v;
 }
 
-void vec_add_i(struct vec *vec, void *v, size_t index)
+void vec_add_i(struct vec *vec, void *v, unsigned index)
 {
 	int i;
 	if (vec->size == vec->max_size)
@@ -66,7 +64,7 @@ void vec_add_i(struct vec *vec, void *v, size_t index)
 	vec->size++;
 }
 
-void *vec_rm_i(struct vec *vec, size_t index)
+void *vec_rm_i(struct vec *vec, unsigned index)
 {
 	int i;
 	void *ret;
@@ -77,7 +75,7 @@ void *vec_rm_i(struct vec *vec, size_t index)
 	return ret;
 }
 
-void *vec_get(struct vec *vec, size_t index)
+void *vec_get(struct vec *vec, unsigned index)
 {
 	return vec->arr[index];
 }
@@ -87,6 +85,6 @@ static void vec_resize(struct vec *vec)
 	vec->max_size *= VEC_GROWTH_FACTOR;
 	if (!(vec->arr = realloc(vec->arr, sizeof(vec->arr[0]) * 
 						vec->max_size))) {
-		fprintf(stderr, "stack realloc() failure");
+		fprintf(stderr, "vec_resize() failure");
 	}
 }

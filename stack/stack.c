@@ -1,69 +1,63 @@
 #include <stdlib.h>
 #include <stdio.h>
-#include <errno.h>
 #include "stack.h"
+
+static void stack_resize(struct stack *stack);
 
 void stack_init(struct stack *stack, void (*free_v)(void *v))
 {
 	stack->size = 0;
+	stack->max_size = STACK_INIT_MAX_SIZE;
 	stack->free_v = free_v;
-	stack->top = NULL;
+	if (!(stack->arr = malloc(sizeof(stack->arr[0]) * STACK_INIT_MAX_SIZE))) {
+		fprintf(stderr, "stack_init() malloc() failure");
+	}
 }
 
 struct stack *stack_new(void (*free_v)(void *v))
 {
 	struct stack *stack;
 	if (!(stack = malloc(sizeof(*stack))))
-		fprintf(stderr, "stack malloc() failure");
+		fprintf(stderr, "stack_new() malloc() failure");
 	stack_init(stack, free_v);
 	return stack;
 }
 
 void stack_free(struct stack *stack)
 {
-	struct stack_node *walk, *next;
-	for (walk = stack->top; walk; walk = next) {
-		next = walk->next;
-		free(walk);
-	}
+	free(stack->arr);
 }
 
 void stack_free_all(struct stack *stack)
 {
-	struct stack_node *walk, *next;
-	for (walk = stack->top; walk; walk = next) {
-		next = walk->next;
-		stack->free_v(walk->v);
-		free(walk);
-	}
+	int i;
+	for (i=0; i<stack->size; i++)
+		stack->free_v(stack->arr[i]);
+	free(stack->arr);
 }
 
 void *stack_peek(struct stack *stack)
 {
-	return stack->top ? stack->top->v : NULL;
+	return stack->arr[(int) stack->size-1];
 }
 
 void stack_push(struct stack *stack, void *v)
 {
-	struct stack_node *new;
-	if (!(new = malloc(sizeof(*new))))
-		fprintf(stderr, "stack malloc() failure");
-	new->v = v;
-	new->next = stack->top;
-	stack->top = new;
-	stack->size++;
+	if (stack->size == stack->max_size)
+		stack_resize(stack);
+	stack->arr[stack->size++] = v;
 }
 
 void *stack_pop(struct stack *stack)
 {
-	void *ret;
-	struct stack_node *top;
-	if (!stack->size)
-		return NULL;
-	top = stack->top;
-	stack->top = top->next;
-	ret = top->v;
-	free(top);
-	stack->size--;
-	return ret;
+	return stack->arr[(int) --stack->size];
+}
+
+static void stack_resize(struct stack *stack)
+{
+	stack->max_size *= STACK_GROWTH_FACTOR;
+	if (!(stack->arr = realloc(stack->arr, sizeof(stack->arr[0]) * 
+					stack->max_size))) {
+		fprintf(stderr, "stack_resize() realloc() failure");
+	}
 }
