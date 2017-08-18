@@ -61,41 +61,42 @@ struct hmap *hmap_new(unsigned (*hash_k)(const void *k),
 		void (*free_k)(void *k), 
 		void (*free_v)(void *v));
 
-/*
- * frees the resources behind the struct hashmap
- * does not free the struct hashmap pointer itself
- * only frees the internally used resources
- * does not free key-value pairs that are placed in the hashmap
- */
-void hmap_free(struct hmap *hmap);
 
 /*
- * frees hmap and keys only, not vals
+ * frees the struct hmap * given to the free function
+ * useful for freeing of hmaps created by hmap_new()
  */
-void hmap_free_k(struct hmap *hmap);
+#define HMAP_FREE_PTR (1)
 
 /*
- * frees hmap and vals only, not keys
+ * frees the keys inside the hmap using the hmap->free_k() function
  */
-void hmap_free_v(struct hmap *hmap);
-
+#define HMAP_FREE_KEYS (1<<1)
 
 /*
- * frees both the resources behind the struct hashmap
- * and the key-value pairs that are placed in the hashmap
- * does not free the struct hmap pointer itself
+ * frees the values inside the hmap using the hmap->free_v() function
  */
-void hmap_free_all(struct hmap *hmap);
+#define HMAP_FREE_VALS (1<<2)
+
+/*
+ * frees the resources behind the hmap
+ * whether keys/values/pointer are to be freed is specified in flags
+ */
+void hmap_free(struct hmap *hmap, int flags);
+
 
 /*
  * hashes key using hashmap->hash_key and places it into hashmap
  * mapped to value
- * NULL values are not allowed for either key or value
+ * NULL keys or values are not suggested to be used
+ * have to be careful if you do
  * if key already exists in hashmap, existing value is replaced
- * with the value argument and the old value is freed
+ * with the value argument and the old v ptr is put in *orig_v
+ * if entry was not replaced, *orig_v is set to NULL
+ * if orig_v is not NULL
  * otherwise NULL is returned
  */
-void hmap_put(struct hmap *hmap, void *k, void *v);
+void hmap_put(struct hmap *hmap, void *k, void *v, void **orig_v);
 
 /*
  * returns the struct hashmap_entry containing the 
@@ -104,17 +105,22 @@ void hmap_put(struct hmap *hmap, void *k, void *v);
  * hashmap_entry->value is the value
  * returns NULL when the key-value is not present
  */
-struct hmap_entry *hmap_get(struct hmap *hmap, const void *k);
+void *hmap_get(struct hmap *hmap, const void *k);
 
 /*
- * returns the struct hashmap_entry containing the 
- * key-value pair corresponding to key from hashmap
+ * returns the value corresponding to the given key k
+ * makes *orig_k point to the original key used
+ * orig_k may be given as NULL if the original key doesnt matter
  * removes the entry from the hashmap
- * hashmap_entry->key is the key
- * hashmap_entry->value is the value
  * returns NULL when the key-value is not present
+ * sets *orig_k to NULL when the key-value is not present
  */
-struct hmap_entry *hmap_rm(struct hmap *hmap, const void *k);
+void *hmap_rm(struct hmap *hmap, const void *k, void **orig_k);
 
+
+#define HMAP_PROCESS_KEYS (1)
+#define HMAP_PROCESS_VALS (1<<1)
+void hmap_for_each(struct hmap *hmap, void (*process_k)(void *k), 
+			void (*process_v)(void *v), int flags);
 
 #endif

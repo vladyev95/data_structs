@@ -26,22 +26,23 @@ struct vec *vec_new(int (*cmp)(const void *v1, const void *v2),
 	return vec;
 }
 
-void vec_free(struct vec *vec)
+void vec_free(struct vec *vec, int flags)
 {
-	free(vec->arr);
-}
+	unsigned i;
 
-void vec_free_all(struct vec *vec)
-{
-	int i;
-	for (i=0; i<vec->size; i++)
-		vec->free_v(vec->arr[i]);
+	if (flags & VEC_FREE_VALS)
+		for (i=0; i<vec->size; i++)
+			vec->free_v(vec->arr[i]);
+	
 	free(vec->arr);
+
+	if (flags & VEC_FREE_PTR)
+		free(vec);
 }
 
 bool vec_contains(const struct vec *vec, const void *v)
 {
-	int i;
+	unsigned i;
 	for (i=0; i<vec->size && vec->cmp(vec->arr[i], v); i++) ;
 	return i == vec->size;
 }

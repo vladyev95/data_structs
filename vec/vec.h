@@ -22,9 +22,10 @@ void vec_init(struct vec *vec, int (*cmp)(const void *v1, const void *v2),
 struct vec *vec_new(int (*cmp)(const void *v1, const void *v2),
 			void (*free_v)(void *v));
 
-void vec_free(struct vec *vec);
 
-void vec_free_all(struct vec *vec);
+#define VEC_FREE_PTR (1)
+#define VEC_FREE_VALS (1<<1)
+void vec_free(struct vec *vec, int flags);
 
 bool vec_contains(const struct vec *vec, const void *v);
 

@@ -19,8 +19,7 @@ void hmap_init(struct hmap *hmap,
 	hmap->free_v = free_v;
 	hmap->n_buckets = HMAP_INIT_N_BUCKETS;
 	hmap->size = 0;
-	if (!(hmap->buckets = calloc(hmap->n_buckets,
-					sizeof(hmap->buckets[0])))) {
+	if (!(hmap->buckets = calloc(hmap->n_buckets,sizeof(hmap->buckets[0])))) {
 		fprintf(stderr, "hmap calloc() failure");
 	}
 }
@@ -41,93 +40,50 @@ struct hmap *hmap_new(unsigned (*hash_k)(const void *k),
 }
 
 /*
- * frees memory behind hmap but neither keys or values
- */
-void hmap_free(struct hmap *hmap)
-{
-	int i;
-	struct hmap_entry *walk, *next;
-	for (i=0; i<hmap->n_buckets; i++) {
-		walk = hmap->buckets[i];
-		while (walk) {
-			next = walk->next;
-			free(walk);
-			walk = next;
-		}
-	}
-	free(hmap->buckets);
-}
-
-/*
- * frees memory behind hmap and the keys in the hmap
- * uses hmap->free_k to free keys
- */
-void hmap_free_k(struct hmap *hmap)
-{
-	int i;
-	struct hmap_entry *walk, *next;
-	for (i=0; i<hmap->n_buckets; i++) {
-		walk = hmap->buckets[i];
-		while (walk) {
-			next = walk;
-			hmap->free_k(walk->k);
-			free(walk);
-			walk = next;
-		}
-	}
-	free(hmap->buckets);
-}
-
-/*
- * frees memory behind hmap and the values in the hmap
- * uses hmap->free_v to free values
- */
-void hmap_free_v(struct hmap *hmap)
-{
-	int i;
-	struct hmap_entry *walk, *next;
-	for (i=0; i<hmap->n_buckets; i++) {
-		walk = hmap->buckets[i];
-		while (walk) {
-			next = walk->next;
-			hmap->free_v(walk->v);
-			free(walk);
-			walk = next;
-		}
-	}
-	free(hmap->buckets);
-}
-
-/*
  * frees memory behind the hmap and the keys and values in the hmap
  * uses hmap->free_k and hmap->free_v
  */
-void hmap_free_all(struct hmap *hmap)
+void hmap_free(struct hmap *hmap, int flags)
 {
-	int i;
+	unsigned i, free_ks, free_vs;
+	free_ks = flags & HMAP_FREE_KEYS;
+	free_vs = flags & HMAP_FREE_VALS;
 	struct hmap_entry *walk, *next;
 	for (i=0; i<hmap->n_buckets; i++) {
 		walk = hmap->buckets[i];
 		while (walk) {
 			next = walk->next;
-			hmap->free_k(walk->k);
-			hmap->free_v(walk->v);
+			if (free_ks)
+			    hmap->free_k(walk->k);
+			if (free_vs)
+			    hmap->free_v(walk->v);
 			free(walk);
 			walk = next;
 		}
 	}
 	free(hmap->buckets);
+	if (flags & HMAP_FREE_PTR)
+	    free(hmap);
 }
 
 /*
  * puts key value pair k->v into hmap
  * uses hmap->hash_k
  */
-void hmap_put(struct hmap *hmap, void *k, void *v)
+void hmap_put(struct hmap *hmap, void *k, void *v, void **orig_v)
 {
 	unsigned bucket;
 	struct hmap_entry *entry;
 	bucket = hmap->hash_k(k) % hmap->n_buckets;
+	for (entry = hmap->buckets[bucket]; entry; entry=entry->next) {
+		if (!hmap->cmp_k(k, entry->k)) {
+			if (orig_v)
+				*orig_v = entry->v;
+			entry->v = v;
+			return;
+		}
+
+	}
 	if (!(entry = malloc(sizeof(*entry))))
 		fprintf(stderr, "hmap malloc() failure");
 	entry->k = k;
@@ -135,6 +91,8 @@ void hmap_put(struct hmap *hmap, void *k, void *v)
 	entry->next = hmap->buckets[bucket];
 	hmap->buckets[bucket] = entry;
 	hmap->size++;
+	if (orig_v)
+		*orig_v = NULL;
 	if ((float) hmap->size / hmap->n_buckets > HMAP_LOAD_FACTOR)
 		hmap_rehash(hmap);
 }
@@ -144,52 +102,61 @@ void hmap_put(struct hmap *hmap, void *k, void *v)
  * key and value are accessed by entry->k & entry->v
  * returns NULL if the key is not found
  */
-struct hmap_entry *hmap_get(struct hmap *hmap, const void *k)
+void *hmap_get(struct hmap *hmap, const void *k)
 {
 	struct hmap_entry *walk;
 	walk = hmap->buckets[hmap->hash_k(k) % hmap->n_buckets];
 	while (walk) {
 		if (!hmap->cmp_k(k, walk->k))
-			return walk;
+			return walk->v;
 		walk = walk->next;
 	}
 	return NULL;
 }
 
-/*
- * returns a pointer to a hmap_entry containing key k
- * the hmap_entry has been removed from the hmap
- * key and value can be accessed by entry->k & entry->v
- * returns NULL if the key is not found
- */
-struct hmap_entry *hmap_rm(struct hmap *hmap, const void *k)
+void *hmap_rm(struct hmap *hmap, const void *k, void **orig_k)
 {
 	unsigned bucket;
-	struct hmap_entry *walk, *ret;
+	struct hmap_entry *walk, *tofree;
+	void *v;
+
 	bucket = hmap->hash_k(k) % hmap->n_buckets;
 	walk = hmap->buckets[bucket];
-	if (!walk)
+	if (!walk) {
+		if (orig_k)
+			*orig_k = NULL;
 		return NULL;
+	}
 	if (!hmap->cmp_k(k, walk->k)) {
 		hmap->buckets[bucket] = walk->next;
 		hmap->size--;
-		return walk;
+		v = walk->v;
+		if (orig_k)
+			*orig_k = walk->k;
+		free(walk);
+		return v;
 	}
 	while (walk->next) {
 		if (!hmap->cmp_k(k, walk->next->k)) {
-			ret = walk->next;
+			tofree = walk->next;
+			v = tofree->v;
+			if (orig_k)
+				*orig_k = tofree->k;
 			walk->next = walk->next->next;
 			hmap->size--;
-			return ret;
+			free(tofree);
+			return v;
 		}
 		walk = walk->next;
 	}
+	if (orig_k)
+		*orig_k = NULL;
 	return NULL;
 }
 
 static void hmap_rehash(struct hmap *hmap)
 {
-	int i;
+	unsigned i;
 	unsigned new_n_buckets, bucket;
 	struct hmap_entry **new_buckets, *walk, *next;
 	new_n_buckets = hmap->n_buckets * HMAP_GROWTH_FACTOR;
@@ -209,4 +176,24 @@ static void hmap_rehash(struct hmap *hmap)
 	free(hmap->buckets);
 	hmap->n_buckets = new_n_buckets;
 	hmap->buckets = new_buckets;
+}
+
+
+
+void hmap_for_each(struct hmap *hmap, void (*process_k)(void *), 
+			void (*process_v)(void *), int flags)
+{
+	int proc_ks, proc_vs, i;
+	struct hmap_entry *walk;
+	proc_ks = flags & HMAP_PROCESS_KEYS;
+	proc_vs = flags & HMAP_PROCESS_VALS;
+
+	for (i=0; i<hmap->n_buckets; i++) {
+		for (walk=hmap->buckets[i]; walk; walk = walk->next) {
+			if (proc_ks)
+				process_k(walk->k);
+			if (proc_vs)
+				process_v(walk->v);
+		}
+	}
 }
