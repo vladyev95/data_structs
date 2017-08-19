@@ -20,6 +20,7 @@
  */
 #define HMAP_GROWTH_FACTOR 4
 
+
 /*
  * key/value node for the linked list buckets of the hashmap
  */
@@ -30,11 +31,11 @@ struct hmap_entry {
 
 struct hmap {
 	struct hmap_entry **buckets;
-	unsigned n_buckets, size;
-	unsigned (*hash_k)(const void *k);
-	int (*cmp_k)(const void *k1, const void *k2);
-	void (*free_k)(void *k);
-	void (*free_v)(void *v);
+	int n_buckets, size;
+	unsigned (*hash)(const void *);
+	int (*cmp)(const void *, const void *);
+	void (*free_k)(void *);
+	void (*free_v)(void *);
 };
 
 /*
@@ -44,10 +45,10 @@ struct hmap {
  * may not work if this is done
  */
 void hmap_init(struct hmap *hmap, 
-		unsigned (*hash_k)(const void *key), 
-		int (*cmp_k)(const void *k1, const void *k2), 
-		void (*free_k)(void *k), 
-		void (*free_v)(void *v));
+		unsigned (*hash)(const void *), 
+		int (*cmp)(const void *, const void *), 
+		void (*free_k)(void *), 
+		void (*free_v)(void *));
 
 /*
  * dynamically allocates a struct hashmap
@@ -56,10 +57,10 @@ void hmap_init(struct hmap *hmap,
  * if the key-value pairs have automatic storage
  * hashmap_free_all may not be called if free_key or free_value are NULL
  */
-struct hmap *hmap_new(unsigned (*hash_k)(const void *k), 
-		int (*cmp_k)(const void *k1, const void *k2), 
-		void (*free_k)(void *k), 
-		void (*free_v)(void *v));
+struct hmap *hmap_new(unsigned (*hash)(const void *), 
+		int (*cmp)(const void *, const void *), 
+		void (*free_k)(void *), 
+		void (*free_v)(void *));
 
 
 /*
