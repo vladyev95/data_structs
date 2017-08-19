@@ -18,20 +18,18 @@ int *malloc_int(int x)
 
 int main(void)
 {
-	int i, *ret;
+	int i;
 	struct q q;
-	srand(time(NULL));
 	q_init(&q, free);
-	for (i=LOW; i<=HIGH; i++) {
-		if (rand() % 2) {
-			q_enq(&q, malloc_int(i));
-		} else {
-			ret = q_deq(&q);
-			free(ret);
-		}
-	}
-	fprintf(stderr, "size: %u front: %u back: %u max_size: %u\n", q.size,
-			q.front, q.back, q.max_size);
-	q_free_v(&q);
+
+	for (i=0; i<100000; i++)
+		q_enq(&q, malloc_int(i));
+	
+	printf("%d\n", *(int*)q_peek(&q));
+	
+	for (i=0; i<100000; i++)
+		q_deq(&q);
+	
+	q_free(&q, Q_FREE_ELEMS);
 	return 0;
 }

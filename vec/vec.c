@@ -3,88 +3,104 @@
 #include <stdlib.h>
 #include "vec.h"
 
-static void vec_resize(struct vec *vec);
 
-void vec_init(struct vec *vec, int (*cmp)(const void *v1, const void *v2),
-			void (*free_v)(void *v))
+void vec_init(struct vec *vec, int (*cmp)(const void *, const void *),
+			void (*free)(void *))
 {
 	vec->size = 0;
 	vec->max_size = VEC_INIT_MAX_SIZE;
 	vec->cmp = cmp;
-	vec->free_v = free_v;
-	if (!(vec->arr = malloc(sizeof(vec->arr[0]) * VEC_INIT_MAX_SIZE)))
-		fprintf(stderr, "vec malloc() failure");
+	vec->free = free;
+	if (!(vec->arr = malloc(sizeof(vec->arr[0]) * vec->max_size)))
+		fprintf(stderr, "vec_init() malloc() FAILURE\n");
 }
 
-struct vec *vec_new(int (*cmp)(const void *v1, const void *v2),
-			void (*free_v)(void *v))
+struct vec *vec_new(int (*cmp)(const void *, const void *),
+			void (*free)(void *))
 {
 	struct vec *vec;
 	if (!(vec = malloc(sizeof(*vec))))
-		fprintf(stderr, "vec malloc() failure");
-	vec_init(vec, cmp, free_v);
+		fprintf(stderr, "vec_new() malloc() FAILURE\n");
+	vec_init(vec, cmp, free);
 	return vec;
 }
 
+
+static void vec_free_has_elems(struct vec *vec);
+
 void vec_free(struct vec *vec, int flags)
 {
-	unsigned i;
-
-	if (flags & VEC_FREE_VALS)
-		for (i=0; i<vec->size; i++)
-			vec->free_v(vec->arr[i]);
-	
+	if (flags & VEC_FREE_ELEMS)
+		vec_free_has_elems(vec);
 	free(vec->arr);
-
 	if (flags & VEC_FREE_PTR)
 		free(vec);
 }
 
+static void vec_free_has_elems(struct vec *vec)
+{
+	int i;
+	for (i=0; i<vec->size; i++)
+		vec->free(vec->arr[i]);
+}
+
+int vec_index_of(const struct vec *vec, const void *v)
+{
+	int i;
+	for (i=0; i<vec->size; i++)
+		if (!vec->cmp(vec->arr[i], v))
+			return i;
+	return -1;
+}
+
 bool vec_contains(const struct vec *vec, const void *v)
 {
-	unsigned i;
-	for (i=0; i<vec->size && vec->cmp(vec->arr[i], v); i++) ;
-	return i == vec->size;
+	return vec_index_of(vec, v) != -1;
 }
+
+
+static void vec_resize(struct vec *vec, int new_max);
 
 void vec_add(struct vec *vec, void *v)
 {
 	if (vec->size == vec->max_size)
-		vec_resize(vec);
+		vec_resize(vec, vec->max_size * VEC_GROWTH_FACTOR);
 	vec->arr[vec->size++] = v;
 }
 
-void vec_add_i(struct vec *vec, void *v, unsigned index)
+void vec_add_i(struct vec *vec, void *v, int idx)
 {
 	int i;
 	if (vec->size == vec->max_size)
-		vec_resize(vec);
-	for (i=vec->size++; i>index; i--)
+		vec_resize(vec, vec->max_size * VEC_GROWTH_FACTOR);
+	for (i=vec->size++; i>idx; i--)
 		vec->arr[i] = vec->arr[i-1];
 	vec->arr[i] = v;
 }
 
-void *vec_rm_i(struct vec *vec, unsigned index)
+void *vec_rm(struct vec *vec, int idx)
 {
 	int i;
 	void *ret;
-	ret = vec->arr[index];
+	ret = vec->arr[idx];
 	vec->size--;
-	for (i=index; i<vec->size; i++)
+	for (i=idx; i<vec->size; i++)
 		vec->arr[i] = vec->arr[i+1];
+	if (vec->max_size / VEC_TRUNCATE_FACTOR >= VEC_INIT_MAX_SIZE &&
+		vec->size < vec->max_size / VEC_TRUNCATE_THRESHOLD)
+		vec_resize(vec, vec->max_size / VEC_TRUNCATE_FACTOR);
 	return ret;
 }
 
-void *vec_get(struct vec *vec, unsigned index)
+void *vec_get(struct vec *vec, int idx)
 {
-	return vec->arr[index];
+	return vec->arr[idx];
 }
 
-static void vec_resize(struct vec *vec)
+
+static void vec_resize(struct vec *vec, int new_max)
 {
-	vec->max_size *= VEC_GROWTH_FACTOR;
-	if (!(vec->arr = realloc(vec->arr, sizeof(vec->arr[0]) * 
-						vec->max_size))) {
-		fprintf(stderr, "vec_resize() failure");
-	}
+	if (!(vec->arr = realloc(vec->arr, sizeof(vec->arr[0]) * new_max)))
+		fprintf(stderr, "vec_resize() realloc() FAILURE\n");
+	vec->max_size = new_max;
 }

@@ -46,9 +46,9 @@ struct hmap *hmap_new(unsigned (*hash_k)(const void *k),
 void hmap_free(struct hmap *hmap, int flags)
 {
 	unsigned i, free_ks, free_vs;
+	struct hmap_entry *walk, *next;
 	free_ks = flags & HMAP_FREE_KEYS;
 	free_vs = flags & HMAP_FREE_VALS;
-	struct hmap_entry *walk, *next;
 	for (i=0; i<hmap->n_buckets; i++) {
 		walk = hmap->buckets[i];
 		while (walk) {

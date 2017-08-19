@@ -5,22 +5,27 @@
 
 #define STACK_GROWTH_FACTOR 4
 
+#define STACK_TRUNCATE_THRESHOLD 16
+
+#define STACK_TRUNCATE_FACTOR 2
+
 struct stack {
 	void **arr;
-	unsigned size, max_size;
-	void (*free_v)(void *v);
+	int size, max_size;
+	void (*free)(void *);
 };
 
-void stack_init(struct stack *stack, void (*free_v)(void *v));
+void stack_init(struct stack *stack, void (*free)(void *));
 
-struct stack *stack_new(void (*free_v)(void *v));
+struct stack *stack_new(void (*free)(void *));
 
-void stack_free(struct stack *stack);
-void stack_free_all(struct stack *stack);
+#define STACK_FREE_PTR (1)
+#define STACK_FREE_ELEMS (1<<1)
+void stack_free(struct stack *stack, int flags);
 
-void stack_push(struct stack *stack, void *v);
+void stack_push(struct stack *stack, void *elem);
 void *stack_pop(struct stack *stack);
-void *stack_peek(struct stack *stack);
+const void *stack_peek(struct stack *stack);
 
 
 #endif

@@ -9,48 +9,35 @@
 #define Q_GROWTH_FACTOR 4
 
 /*
- * q is resized if q->size <= q->max_size / Q_RESIZE_DECISION_FACTOR
+ * q is resized if q->size <= q->max_size / Q_TRUNCATE_THRESHOLD
  */
-#define Q_DOWNSIZE_DECISION_FACTOR 16
+#define Q_TRUNCATE_THRESHOLD 16
 
-/*
- * q->max_size is reduced to q->max_size / Q_DOWNSIZE_FACTOR
- */
-#define Q_DOWNSIZE_FACTOR 4
-
-
-/*
- * q must both satisfy Q_RESIZE_DECISION_FACTOR and must be at least
- * as large as Q_DOWNSIZE_LIMIT
- */
-#define Q_DOWNSIZE_LIMIT 4096
-
-/*
- * implemented using a circular array
- */
+#define Q_TRUNCATE_FACTOR 2
 
 struct q {
 	void **arr;
-	unsigned size, max_size, front, back;
-	void (*free_v)(void *v);
+	int size, max_size, front, back;
+	void (*free)(void *);
 };
 
 
 /*
  * initializes the q, free_v may be NULL, don't use q_free_v() if so
  */
-void q_init(struct q *q, void (*free_v)(void *v));
+void q_init(struct q *q, void (*free)(void *));
 
 /*
  * returns dynamically allocated and initialized q
  */
-struct q *q_new(void (*free_v)(void *v));
+struct q *q_new(void (*free)(void *));
 
-void q_free(struct q *q);
-void q_free_v(struct q *q);
+#define Q_FREE_PTR (1)
+#define Q_FREE_ELEMS (1<<1)
+void q_free(struct q *q, int flags);
 
-void q_enq(struct q *q, void *v);
+void q_enq(struct q *q, void *elem);
 void *q_deq(struct q *q);
-void *q_peek(struct q *q);
+const void *q_peek(struct q *q);
 
 #endif
