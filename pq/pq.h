@@ -4,14 +4,16 @@
 /*
  * initial capacity of a pq
  */
-#define PQ_INIT_MAX_SIZE 64
+#define PQ_INIT_MAX_SIZE (64)
 
 /*
  * the factor at which the capacity of a pq will grow once
  * it has reached max capacity
  * pq->max_size *= PQ_GROWTH_FACTOR
  */
-#define PQ_GROWTH_FACTOR 4
+#define PQ_GROWTH_FACTOR (4)
+
+#define PQ_ENLARGE_SIZE(pq) ((pq)->max_size * PQ_GROWTH_FACTOR)
 
 /*
  * the threshold at which a pq will be decreased in max size
@@ -21,11 +23,13 @@
  */
 #define PQ_TRUNCATE_THRESHOLD 8
 
-/*
- * factor by which pq capacity decreases
- */
 #define PQ_TRUNCATE_FACTOR 2
 
+#define PQ_TRUNCATE_SIZE(pq) ((pq)->max_size / PQ_TRUNCATE_FACTOR)
+
+#define PQ_CAN_TRUNCATE(pq) ((pq)->max_size / PQ_TRUNCATE_FACTOR >= PQ_INIT_MAX_SIZE)
+
+#define PQ_SHOULD_TRUNCATE(pq) ((pq)->size < (pq)->max_size / PQ_TRUNCATE_THRESHOLD)
 
 struct pq {
 	void **arr;

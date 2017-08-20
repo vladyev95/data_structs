@@ -3,13 +3,21 @@
 
 #include <stdbool.h>
 
-#define VEC_INIT_MAX_SIZE 64
+#define VEC_INIT_MAX_SIZE (64)
 
-#define VEC_GROWTH_FACTOR 4
+#define VEC_GROWTH_FACTOR (4)
 
-#define VEC_TRUNCATE_THRESHOLD 16
+#define VEC_ENLARGE_SIZE(v) ((v)->max_size * VEC_GROWTH_FACTOR)
 
-#define VEC_TRUNCATE_FACTOR 2
+#define VEC_TRUNCATE_THRESHOLD (16)
+
+#define VEC_TRUNCATE_FACTOR (2)
+
+#define VEC_TRUNCATE_SIZE(v) ((v)->max_size / VEC_TRUNCATE_FACTOR)
+
+#define VEC_CAN_TRUNCATE(v) ((v)->max_size / VEC_TRUNCATE_FACTOR >= VEC_INIT_MAX_SIZE)
+
+#define VEC_SHOULD_TRUNCATE(v) ((v)->size < (v)->max_size / VEC_TRUNCATE_THRESHOLD)
 
 
 struct vec {

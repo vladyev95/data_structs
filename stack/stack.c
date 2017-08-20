@@ -23,18 +23,18 @@ struct stack *stack_new(void (*free_v)(void *v))
 }
 
 
-static void stack_free_has_elems(struct stack *stack);
+static void stack_free_elems(struct stack *stack);
 
 void stack_free(struct stack *stack, int flags)
 {
 	if (flags & STACK_FREE_ELEMS);
-		stack_free_has_elems(stack);
+		stack_free_elems(stack);
 	free(stack->arr);
 	if (flags & STACK_FREE_PTR)
 		free(stack);
 }
 
-static void stack_free_has_elems(struct stack *stack)
+static void stack_free_elems(struct stack *stack)
 {
 	int i;
 	for (i=0; i<stack->size; i++)
@@ -51,7 +51,7 @@ static void stack_resize(struct stack *stack, int new_max);
 void stack_push(struct stack *stack, void *v)
 {
 	if (stack->size == stack->max_size)
-		stack_resize(stack, stack->max_size * STACK_GROWTH_FACTOR);
+		stack_resize(stack, STACK_ENLARGE_SIZE(stack));
 	stack->arr[stack->size++] = v;
 }
 
@@ -68,9 +68,8 @@ void *stack_pop(struct stack *stack)
 {
 	void *ret;
 	ret = stack->size ? stack->arr[--stack->size] : NULL;
-	if (stack->size / STACK_TRUNCATE_THRESHOLD >= STACK_INIT_MAX_SIZE &&
-		stack->max_size / STACK_TRUNCATE_THRESHOLD > stack->size)
-		stack_resize(stack, stack->max_size / STACK_TRUNCATE_FACTOR);
+	if (STACK_CAN_TRUNCATE(stack) && STACK_SHOULD_TRUNCATE(stack))
+		stack_resize(stack, STACK_TRUNCATE_SIZE(stack));
 	return ret;
 }
 

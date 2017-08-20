@@ -57,7 +57,7 @@ static void q_resize(struct q *q, int new_max);
 void q_enq(struct q *q, void *elem)
 {
 	if (q->size == q->max_size)
-		q_resize(q, q->max_size * Q_GROWTH_FACTOR);
+		q_resize(q, Q_ENLARGE_SIZE(q));
 
 	if (q->size) {
 		q->back = (q->back + 1) % q->max_size;
@@ -115,9 +115,8 @@ static void *q_deq_has_elems(struct q *q)
 	
 	if (!q->size)
 		q->front = q->back = 0;
-	else if (q->max_size / Q_TRUNCATE_FACTOR >= Q_INIT_MAX_SIZE && 
-			q->size < q->max_size / Q_TRUNCATE_THRESHOLD)
-		q_resize(q, q->max_size / Q_TRUNCATE_FACTOR);
+	else if (Q_CAN_TRUNCATE(q) && Q_SHOULD_TRUNCATE(q))
+		q_resize(q, Q_TRUNCATE_SIZE(q));
 
 	return ret;
 }

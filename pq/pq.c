@@ -52,7 +52,7 @@ static void pq_bubble_up(struct pq *pq);
 void pq_enq(struct pq *pq, void *elem)
 {
 	if (pq->size == pq->max_size)
-		pq_resize(pq, pq->max_size * PQ_GROWTH_FACTOR);
+		pq_resize(pq, PQ_ENLARGE_SIZE(pq));
 	pq->arr[pq->size++] = elem;
 	pq_bubble_up(pq);
 }
@@ -100,9 +100,8 @@ static void *pq_deq_has_elems(struct pq *pq)
 	ret = pq->arr[0];
 	pq->arr[0] = pq->arr[--pq->size];
 	pq_bubble_down(pq);
-	if (pq->max_size / PQ_TRUNCATE_FACTOR >= PQ_INIT_MAX_SIZE && 
-			pq->size < pq->max_size / PQ_TRUNCATE_THRESHOLD)
-		pq_resize(pq, pq->max_size / PQ_TRUNCATE_FACTOR);
+	if (PQ_CAN_TRUNCATE(pq) && PQ_SHOULD_TRUNCATE(pq))
+		pq_resize(pq, PQ_TRUNCATE_SIZE(pq));
 	return ret;
 }
 

@@ -1,19 +1,27 @@
 #ifndef Q_H
 #define Q_H
 
-#define Q_INIT_MAX_SIZE 64
+#define Q_INIT_MAX_SIZE (64)
 
 /*
  * when the q is full, q->max_size *= Q_GROWTH_FACTOR
  */
-#define Q_GROWTH_FACTOR 4
+#define Q_GROWTH_FACTOR (4)
+
+#define Q_ENLARGE_SIZE(pq) ((pq)->max_size * Q_GROWTH_FACTOR)
 
 /*
  * q is resized if q->size <= q->max_size / Q_TRUNCATE_THRESHOLD
  */
-#define Q_TRUNCATE_THRESHOLD 16
+#define Q_TRUNCATE_THRESHOLD (16)
 
-#define Q_TRUNCATE_FACTOR 2
+#define Q_TRUNCATE_FACTOR (2)
+
+#define Q_TRUNCATE_SIZE(q) ((q)->max_size / Q_TRUNCATE_FACTOR)
+
+#define Q_CAN_TRUNCATE(q) ((q)->max_size / Q_TRUNCATE_FACTOR >= Q_INIT_MAX_SIZE)
+
+#define Q_SHOULD_TRUNCATE(q) ((q)->size < (q)->max_size / Q_TRUNCATE_THRESHOLD)
 
 struct q {
 	void **arr;

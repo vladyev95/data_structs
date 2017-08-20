@@ -5,20 +5,34 @@
 /*
  * num buckets/linked lists for values to be hashed into initially
  */
-#define HMAP_INIT_N_BUCKETS 64
+#define HMAP_INIT_N_BKTS (1024)
 
 /*
  * when the number of key-value pairs / num_buckets reaches
  * more than LOAD_FACTOR, rehash is done to maintain put/get performance
  * rehashing takes O(n) time
  */
-#define HMAP_LOAD_FACTOR .75f
+#define HMAP_LOAD_FACTOR (.75f)
 
 /*
  * how much the num_buckets increases by when LOAD_FACTOR is reached
  * num_buckets increases to n_buckets * GROWTH_FACTOR
  */
-#define HMAP_GROWTH_FACTOR 4
+#define HMAP_GROWTH_FACTOR (4)
+
+#define HMAP_SHOULD_ENLARGE(hmap) ((float) (hmap)->size / (hmap)->n_bkts >= HMAP_LOAD_FACTOR)
+
+#define HMAP_ENLARGE_SIZE(hmap) ((hmap)->n_bkts * HMAP_GROWTH_FACTOR)
+
+#define HMAP_TRUNCATE_THRESHOLD (16)
+
+#define HMAP_TRUNCATE_FACTOR (2)
+
+#define HMAP_TRUNCATE_SIZE(hmap) ((hmap)->n_bkts / HMAP_TRUNCATE_FACTOR)
+
+#define HMAP_CAN_TRUNCATE(hmap) ((hmap)->n_bkts / HMAP_TRUNCATE_FACTOR >= HMAP_INIT_N_BKTS)
+
+#define HMAP_SHOULD_TRUNCATE(hmap) ((hmap)->size < (hmap)->n_bkts / HMAP_TRUNCATE_THRESHOLD)
 
 
 /*
@@ -30,8 +44,8 @@ struct hmap_entry {
 };
 
 struct hmap {
-	struct hmap_entry **buckets;
-	int n_buckets, size;
+	struct hmap_entry **bkts;
+	int n_bkts, size;
 	unsigned (*hash)(const void *);
 	int (*cmp)(const void *, const void *);
 	void (*free_k)(void *);
@@ -121,7 +135,7 @@ void *hmap_rm(struct hmap *hmap, const void *k, void **orig_k);
 
 #define HMAP_PROCESS_KEYS (1)
 #define HMAP_PROCESS_VALS (1<<1)
-void hmap_for_each(struct hmap *hmap, void (*process_k)(void *k), 
-			void (*process_v)(void *v), int flags);
+void hmap_for_each(struct hmap *hmap, void (*for_k)(void *), 
+			void (*for_v)(void *));
 
 #endif

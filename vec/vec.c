@@ -26,18 +26,18 @@ struct vec *vec_new(int (*cmp)(const void *, const void *),
 }
 
 
-static void vec_free_has_elems(struct vec *vec);
+static void vec_free_elems(struct vec *vec);
 
 void vec_free(struct vec *vec, int flags)
 {
 	if (flags & VEC_FREE_ELEMS)
-		vec_free_has_elems(vec);
+		vec_free_elems(vec);
 	free(vec->arr);
 	if (flags & VEC_FREE_PTR)
 		free(vec);
 }
 
-static void vec_free_has_elems(struct vec *vec)
+static void vec_free_elems(struct vec *vec)
 {
 	int i;
 	for (i=0; i<vec->size; i++)
@@ -64,7 +64,7 @@ static void vec_resize(struct vec *vec, int new_max);
 void vec_add(struct vec *vec, void *v)
 {
 	if (vec->size == vec->max_size)
-		vec_resize(vec, vec->max_size * VEC_GROWTH_FACTOR);
+		vec_resize(vec, VEC_ENLARGE_SIZE(vec));
 	vec->arr[vec->size++] = v;
 }
 
@@ -72,7 +72,7 @@ void vec_add_i(struct vec *vec, void *v, int idx)
 {
 	int i;
 	if (vec->size == vec->max_size)
-		vec_resize(vec, vec->max_size * VEC_GROWTH_FACTOR);
+		vec_resize(vec, VEC_ENLARGE_SIZE(vec));
 	for (i=vec->size++; i>idx; i--)
 		vec->arr[i] = vec->arr[i-1];
 	vec->arr[i] = v;
@@ -86,9 +86,8 @@ void *vec_rm(struct vec *vec, int idx)
 	vec->size--;
 	for (i=idx; i<vec->size; i++)
 		vec->arr[i] = vec->arr[i+1];
-	if (vec->max_size / VEC_TRUNCATE_FACTOR >= VEC_INIT_MAX_SIZE &&
-		vec->size < vec->max_size / VEC_TRUNCATE_THRESHOLD)
-		vec_resize(vec, vec->max_size / VEC_TRUNCATE_FACTOR);
+	if (VEC_CAN_TRUNCATE(vec) && VEC_SHOULD_TRUNCATE(vec))
+		vec_resize(vec, VEC_TRUNCATE_SIZE(vec));
 	return ret;
 }
 
